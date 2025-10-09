@@ -201,7 +201,7 @@ def putTextOnImage(image, text, ypos, color):
 cv2.namedWindow("Camera")
 cv2.namedWindow("Data")
 averageDistance = 0
-distanceMeasures = 0
+distanceMeasures = 1
 averageTilt = 0
 tiltMeasures = 0
 smileCount = 0
