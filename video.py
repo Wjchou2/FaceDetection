@@ -13,7 +13,7 @@ eye_closed = False
 blink_count = 0
 eye_closed_prev = False
 faceArea = 0
-
+distance = 0
 
 # def getIrisPos(frame):
 #     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -118,29 +118,33 @@ def detectEyes(frame):
 
 def detectFace(frame):
     global faceArea
-    for x, y, w, h in faces:
+    global distance
+    if len(faces) > 0:
+        x, y, w, h = faces[0]  # first detected face only
         faceArea = w * h
+        distance = (150000 * 2) / (w * h) * 12
+
         cv2.putText(
             frame,
-            "Width: " + str(w) + " Height:" + str(h) + " Size: " + str(w * h),
-            (50, 250),
+            "W: " + str(w) + " H:" + str(h),
+            (x, y - 10),
             cv2.FONT_HERSHEY_SIMPLEX,
             1.5,
             (0, 255, 0),
             2,
             cv2.LINE_AA,
         )
-        cv2.putText(
-            frame,
-            "Blinks: " + str(blink_count),
-            (50, 300),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1.5,
-            (0, 255, 0),
-            2,
-            cv2.LINE_AA,
-        )
-        if w * h > 250000:
+        # cv2.putText(
+        #     frame,
+        #     "Blinks: " + str(blink_count),
+        #     (50, 300),
+        #     cv2.FONT_HERSHEY_SIMPLEX,
+        #     1.5,
+        #     (0, 255, 0),
+        #     2,
+        #     cv2.LINE_AA,
+        # )
+        if w * h > 180000:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
         else:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -164,6 +168,20 @@ def putTextOnImage(image, text, ypos):
 cv2.namedWindow("Faces Detected")
 cv2.namedWindow("Data")
 
+
+def drawData():
+    data_img[:] = 0  # clear previous
+    putTextOnImage(data_img, f"Blinks: {blink_count}", 50)
+    elapsed = time.time() - start_time
+
+    putTextOnImage(
+        data_img, f"Blink rate: {round((blink_count * 3) / elapsed * 100)}%", 100
+    )
+    putTextOnImage(data_img, f"Distance: {distance:.2f}in", 150)
+
+    putTextOnImage(data_img, f"Time: {elapsed:.2f}", 200)
+
+
 data_img = np.zeros((200, 400, 3), dtype=np.uint8)
 while True:
     ret, frame = cap.read()
@@ -180,14 +198,7 @@ while True:
     detectFace(frame)
     detectEyes(frame)
 
-    data_img[:] = 0  # clear previous
-    putTextOnImage(data_img, f"Blinks: {blink_count}", 50)
-    elapsed = time.time() - start_time
-
-    putTextOnImage(
-        data_img, f"Blink rate: {round((blink_count * 3) / elapsed * 100)}%", 100
-    )
-    putTextOnImage(data_img, f"%: {elapsed:.2f}", 150)
+    drawData()
 
     cv2.imshow("Faces Detected", frame)
     cv2.imshow("Data", data_img)
