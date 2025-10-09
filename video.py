@@ -134,16 +134,6 @@ def detectFace(frame):
             2,
             cv2.LINE_AA,
         )
-        # cv2.putText(
-        #     frame,
-        #     "Blinks: " + str(blink_count),
-        #     (50, 300),
-        #     cv2.FONT_HERSHEY_SIMPLEX,
-        #     1.5,
-        #     (0, 255, 0),
-        #     2,
-        #     cv2.LINE_AA,
-        # )
         if w * h > 180000:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
         else:
@@ -167,9 +157,13 @@ def putTextOnImage(image, text, ypos):
 
 cv2.namedWindow("Faces Detected")
 cv2.namedWindow("Data")
+averageDistance = 0
+distanceMeasures = 0
 
 
 def drawData():
+    global averageDistance
+    global distanceMeasures
     data_img[:] = 0  # clear previous
     putTextOnImage(data_img, f"Blinks: {blink_count}", 50)
     elapsed = time.time() - start_time
@@ -177,15 +171,26 @@ def drawData():
     putTextOnImage(
         data_img, f"Blink rate: {round((blink_count * 3) / elapsed * 100)}%", 100
     )
-    putTextOnImage(data_img, f"Distance: {distance:.2f}in", 150)
+    putTextOnImage(data_img, f"Face Distance: {distance:.2f}in", 150)
+    if distance < 500:
+        averageDistance += distance
+        distanceMeasures += 1
+    putTextOnImage(
+        data_img,
+        f"Avg Face Distance: {averageDistance / distanceMeasures:.2f}in",
+        200,
+    )
 
-    putTextOnImage(data_img, f"Time: {elapsed:.2f}", 200)
+    # putTextOnImage(data_img, f"Time: {elapsed:.2f}", 250)
 
 
-data_img = np.zeros((200, 400, 3), dtype=np.uint8)
+data_img = np.zeros((300, 600, 3), dtype=np.uint8)
+last_time = time.time()
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 while True:
     ret, frame = cap.read()
     frame = cv2.flip(frame, 1)
+
     if not ret:
         print("Failed to grab frame")
         break
@@ -197,8 +202,9 @@ while True:
 
     detectFace(frame)
     detectEyes(frame)
-
-    drawData()
+    if time.time() - last_time > 1:
+        drawData()
+        last_time = time.time()
 
     cv2.imshow("Faces Detected", frame)
     cv2.imshow("Data", data_img)
