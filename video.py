@@ -3,7 +3,6 @@ import mediapipe as mp
 import math
 import time
 import numpy as np
-import pyautogui
 
 cap = cv2.VideoCapture(0)
 mp_face_mesh = mp.solutions.face_mesh
@@ -16,70 +15,19 @@ faceArea = 0
 distance = 0
 tilt = 0
 landmarks = ""
-# def getIrisPos(frame):
-#     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-#     results = face_mesh.process(rgb_frame)
-
-#     if results.multi_face_landmarks:
-#         for face_landmarks in results.multi_face_landmarks:
-#             ih, iw, _ = frame.shape
-#             left_iris = face_landmarks.landmark[474]
-#             right_iris = face_landmarks.landmark[469]
-
-#             left_x, left_y = int(left_iris.x * iw), int(left_iris.y * ih)
-#             right_x, right_y = int(right_iris.x * iw), int(right_iris.y * ih)
-
-#             left_corner = face_landmarks.landmark[33]
-#             right_corner = face_landmarks.landmark[133]
-#             top = face_landmarks.landmark[159]
-#             bottom = face_landmarks.landmark[145]
-#             iris = face_landmarks.landmark[474]  # left iris
-
-#             # convert normalized coordinates to image coords
-#             iw, ih = frame.shape[1], frame.shape[0]
-#             lx, ly = int(left_corner.x * iw), int(left_corner.y * ih)
-#             rx, ry = int(right_corner.x * iw), int(right_corner.y * ih)
-#             tx, ty = int(top.x * iw), int(top.y * ih)
-#             bx, by = int(bottom.x * iw), int(bottom.y * ih)
-#             ix, iy = int(iris.x * iw), int(iris.y * ih)
-
-#             # width and height of eye box
-#             eye_width = rx - lx
-#             eye_height = by - ty
-
-#             # relative iris position (0.0 = left/top, 1.0 = right/bottom)
-#             rel_x = (ix - lx) / eye_width
-#             rel_y = (iy - ty) / eye_height
-
-#             screen_width, screen_height = pyautogui.size()
-
-#             mouse_x = rel_x * screen_width
-#             mouse_y = rel_y * screen_height
-
-#             pyautogui.moveTo(mouse_x, mouse_y)
-
-#             cv2.circle(frame, (left_x, left_y), 3, (0, 255, 0), -1)
-#             cv2.circle(frame, (right_x, right_y), 3, (0, 255, 0), -1)
 
 
 def get_expression(frame, face_landmarks):
     ih, iw, _ = frame.shape
-    # Mouth corners and center
     left_mouth = face_landmarks.landmark[61]
     right_mouth = face_landmarks.landmark[291]
     top_lip = face_landmarks.landmark[13]
     bottom_lip = face_landmarks.landmark[14]
 
-    # Convert to pixels
     lx, ly = int(left_mouth.x * iw), int(left_mouth.y * ih)
     rx, ry = int(right_mouth.x * iw), int(right_mouth.y * ih)
     tx, ty = int(top_lip.x * iw), int(top_lip.y * ih)
     bx, by = int(bottom_lip.x * iw), int(bottom_lip.y * ih)
-
-    mouth_width = abs(rx - lx)
-    mouth_height = abs(by - ty)
-    ratio = mouth_width / mouth_height if mouth_height > 0 else 0
 
     cv2.circle(frame, (lx, ly), 2, (0, 255, 0), -1)
     cv2.circle(frame, (rx, ry), 2, (0, 255, 0), -1)
@@ -108,7 +56,7 @@ def detectEyes(frame):
             landmarks = face_landmarks
             get_expression(frame, face_landmarks)
 
-            left_eye_indices = [33, 133, 159, 145, 133]  # example
+            left_eye_indices = [33, 133, 159, 145, 133]
             right_eye_indices = [362, 263, 386, 374, 362]
 
             left_eye = [
@@ -163,7 +111,7 @@ def detectFace(frame):
     global faceArea
     global distance
     if len(faces) > 0:
-        x, y, w, h = faces[0]  # first detected face only
+        x, y, w, h = faces[0]
         faceArea = w * h
         distance = (150000 * 2) / (w * h) * 12
         if distance < 500:
@@ -217,11 +165,11 @@ def drawData():
     global tiltMeasures
     global tilt
     global frame
-    data_img[:] = 0  # clear previous
+    data_img[:] = 0
     putTextOnImage(data_img, f"Blinks: {blink_count}", 50, True)
     elapsed = time.time() - start_time
     rate = round((blink_count * 3) / elapsed * 100)
-    putTextOnImage(data_img, f"Blink rate: {rate}%", 100, abs(rate - 100) < 20)
+    putTextOnImage(data_img, f"Blink rate: {rate}%", 100, rate > 80)
     dist = round(distance)
     putTextOnImage(data_img, f"Face Distance: {dist}in", 150, dist > 20)
     if distance < 500:
@@ -249,7 +197,6 @@ def drawData():
 
 
 data_img = np.zeros((450, 600, 3), dtype=np.uint8)
-
 last_time = time.time()
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 while True:
@@ -269,9 +216,7 @@ while True:
     if time.time() - last_time > 1:
         drawData()
         last_time = time.time()
-
     cv2.imshow("Faces Detected", frame)
     cv2.imshow("Data", data_img)
-
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
