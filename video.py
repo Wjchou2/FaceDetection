@@ -240,15 +240,21 @@ def drawData():
     putTextOnImage(
         data_img, f"Smiling : {round(smileCount / frameCount * 100)}%", 350, True
     )
+    total_sec = int(time.time() - start_time)
+    hour = total_sec // 3600
+    min = (total_sec % 3600) // 60
+    sec = total_sec % 60
+
+    putTextOnImage(data_img, f"Session Time: {hour}h {min}m {sec}s", 400, True)
 
 
-data_img = np.zeros((400, 600, 3), dtype=np.uint8)
+data_img = np.zeros((450, 600, 3), dtype=np.uint8)
+
 last_time = time.time()
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 while True:
     ret, frame = cap.read()
     frame = cv2.flip(frame, 1)
-
     if not ret:
         print("Failed to grab frame")
         break
@@ -261,13 +267,11 @@ while True:
     detectFace(frame)
     detectEyes(frame)
     if time.time() - last_time > 1:
-        print(get_expression(frame, landmarks))
         drawData()
         last_time = time.time()
 
     cv2.imshow("Faces Detected", frame)
     cv2.imshow("Data", data_img)
-    # Show data window
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
